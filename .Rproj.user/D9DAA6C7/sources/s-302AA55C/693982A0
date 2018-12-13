@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1544683322299.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2841398289",
+    "id" : "693982A0",
+    "lastKnownWriteTime" : 1544679069,
+    "last_content_update" : 1544679069,
+    "path" : "~/R_projects/UseRcpp/RcppTest1.Rmd",
+    "project_path" : null,
+    "properties" : {
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
