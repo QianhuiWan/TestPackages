@@ -1,4 +1,4 @@
-# UseRcPP
+# UseRcpp
 
 This repository contains my test codes for using `RcPP` package. By using `Rcpp`, we can implement C++ codes into R more conveniently. 
 
