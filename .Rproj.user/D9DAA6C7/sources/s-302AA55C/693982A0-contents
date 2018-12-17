@@ -112,7 +112,7 @@ The C++ version is similar, **but**:
 
 + Use = for assignment, not <-.
 
-+ C++ provides **operators that modify in-place**: total += x[i] is equivalent to total = total + x[i]. Similar in-place operators are -=, *=, and /=.
++ C++ provides **operators that modify in-place**: total += x[i] is equivalent to total = total + x[i]. Similar in-place operators are `-=`, `*=`, and `/=`.
 
 This is a good example of where C++ is much more efficient than R. As shown by the following microbenchmark, sumC() is competitive with the built-in (and highly optimised) sum(), while sumR() is several orders of magnitude slower.
 
