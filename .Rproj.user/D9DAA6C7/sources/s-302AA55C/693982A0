@@ -5,13 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "2841398289",
+    "hash" : "3219706902",
     "id" : "693982A0",
-    "lastKnownWriteTime" : 1544679069,
-    "last_content_update" : 1544679069,
+    "lastKnownWriteTime" : 1545006254,
+    "last_content_update" : 1545006254347,
     "path" : "~/R_projects/UseRcpp/RcppTest1.Rmd",
     "project_path" : null,
     "properties" : {
+        "cursorPosition" : "141,105",
+        "scrollLine" : "114"
     },
     "relative_order" : 1,
     "source_on_save" : false,

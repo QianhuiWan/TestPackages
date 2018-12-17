@@ -10,8 +10,10 @@ output: html_document
 library(Rcpp)
 ```
 
+**Attention: we need to install `Xcode` in order to use `Rcpp` in Rstudio. I used `xcode-select --install` to install xcode (the CommandLineTools) first, then I am able to run the following `cppFunction`.**
 
-# test1: a simple add function
+# test1: a simple add() function
+
 ```{r}
 cppFunction('int add(int x, int y, int z) {
   int sum = x + y + z;
@@ -25,6 +27,128 @@ add(1,2,3)
 
 ```
 
-# test2: 
+# test2: No inputs, scalar output
+```{r}
+# the C++ function is:
+# int one() {
+#   return 1;
+# }
+
+cppFunction('int one() {
+  return 1;
+}')
+
+# use function
+one()
+```
+
+
+**a number of important differences between R and C++:**
+
++ The syntax to create a function looks like the syntax to call a function; you don’t use assignment to create functions as you do in R.
+
++ You must declare the type of output the function returns. This function returns an int (a scalar integer). The classes for the most common types of R vectors are: NumericVector, IntegerVector, CharacterVector, and LogicalVector.
+
++ Scalars and vectors are different. The scalar equivalents of numeric, integer, character, and logical vectors are: double, int, String, and bool.
+
++ You must use an explicit return statement to return a value from a function.
+
++ Every statement is terminated by a ;.
+
+# test3: Scalar input, scalar output
+```{r}
+
+cppFunction('int signC(int x) {
+  if (x > 0) {
+    return 1;
+  } else if (x == 0) {
+    return 0;
+  } else {
+    return -1;
+  }
+}')
+
+# use function
+sign(x=100)
+```
+
+**Notes**
+In the C++ version:
+
++ We declare the type of each input in the same way we declare the type of the output. While this makes the code a little more verbose, it also makes it very obvious what type of input the function needs.
+
++ The if syntax is identical — while there are some big differences between R and C++, there are also lots of similarities! C++ also has a while statement that works the same way as R’s. As in R you can use break to exit the loop, but to skip one iteration you need to use continue instead of next.
+
+
+# test4: Vector input, scalar output
+
+**One big difference between R and C++ is that the cost of loops is much lower in C++.** For example, we could implement the sum function in R using a loop. If you’ve been programming in R a while, you’ll probably have a visceral reaction to this function!
+
++ In C++, loops have very little overhead, so it’s fine to use them. In `STL` (standard template library), you’ll see alternatives to for loops that more clearly express your intent; they’re not faster, but they can make your code easier to understand.
+
+```{r sumC}
+# a sum function
+cppFunction('double sumC(NumericVector x) {
+  int n = x.size();
+  double total = 0;
+  for(int i = 0; i < n; ++i) {
+    total += x[i];
+  }
+  return total;
+}')
+
+# use function:
+sumC(c(1,2,3,4,5))
+
+```
+
+The C++ version is similar, **but**:
+
++ To find the length of the vector, we use the .size() method, which returns an integer. C++ methods are called with . (i.e., a full stop).
+
++ The for statement has a different syntax: **for(init; check; increment)**. This loop is initialised by creating a new variable called i with value 0. Before each iteration we check that i < n, and terminate the loop if it’s not. After each iteration, **we increment the value of i by one, using the special prefix operator ++ which increases the value of i by 1**.
+
++ In C++, vector indices start at 0. I’ll say this again because it’s so important: IN C++, VECTOR INDICES START AT 0! This is a very common source of bugs when converting R functions to C++.
+
++ Use = for assignment, not <-.
+
++ C++ provides **operators that modify in-place**: total += x[i] is equivalent to total = total + x[i]. Similar in-place operators are -=, *=, and /=.
+
+This is a good example of where C++ is much more efficient than R. As shown by the following microbenchmark, sumC() is competitive with the built-in (and highly optimised) sum(), while sumR() is several orders of magnitude slower.
+
+```{r sumR}
+# the `sum` function in R
+sumR <- function(x) {
+  total <- 0
+  for (i in seq_along(x)) {
+    total <- total + x[i]
+  }
+  total
+}
+
+# check the time for this 3 `Sum` functions in different languages
+library(microbenchmark)
+x <- runif(1e3)
+microbenchmark(
+  sum(x),
+  sumC(x),
+  sumR(x)
+)
+```
+
+
+# test5: Vector input, vector output
+
+Next we’ll create a function that computes the Euclidean distance between a value and a vector of values:
+```{r}
+
+```
+
+
+
+
+
+
+
 
 
