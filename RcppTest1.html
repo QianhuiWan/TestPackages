@@ -381,6 +381,10 @@ $(document).ready(function () {
 <pre class="r"><code>library(Rcpp)</code></pre>
 <p><strong>Attention: we need to install <code>Xcode</code> in order to use <code>Rcpp</code> in Rstudio. I used <code>xcode-select --install</code> to install xcode (the CommandLineTools) first, then I am able to run the following <code>cppFunction</code>.</strong></p>
 </div>
+<div id="cppfunction" class="section level1">
+<h1>cppFunction</h1>
+<p>The folowing were some testing codes for using <code>cppFunction</code>.</p>
+</div>
 <div id="test1-a-simple-add-function" class="section level1">
 <h1>test1: a simple add() function</h1>
 <pre class="r"><code>cppFunction('int add(int x, int y, int z) {
@@ -390,7 +394,7 @@ $(document).ready(function () {
 # add works like a regular R function
 add</code></pre>
 <pre><code>## function (x, y, z) 
-## .Call(&lt;pointer: 0x111bbd300&gt;, x, y, z)</code></pre>
+## .Call(&lt;pointer: 0x10f0e6300&gt;, x, y, z)</code></pre>
 <pre class="r"><code># use this function:
 add(1,2,3)</code></pre>
 <pre><code>## [1] 6</code></pre>
@@ -438,6 +442,111 @@ sign(x=100)</code></pre>
 <li><p>We declare the type of each input in the same way we declare the type of the output. While this makes the code a little more verbose, it also makes it very obvious what type of input the function needs.</p></li>
 <li><p>The if syntax is identical — while there are some big differences between R and C++, there are also lots of similarities! C++ also has a while statement that works the same way as R’s. As in R you can use break to exit the loop, but to skip one iteration you need to use continue instead of next.</p></li>
 </ul>
+</div>
+<div id="test4-vector-input-scalar-output" class="section level1">
+<h1>test4: Vector input, scalar output</h1>
+<p><strong>One big difference between R and C++ is that the cost of loops is much lower in C++.</strong> For example, we could implement the sum function in R using a loop. If you’ve been programming in R a while, you’ll probably have a visceral reaction to this function!</p>
+<ul>
+<li>In C++, loops have very little overhead, so it’s fine to use them. In <code>STL</code> (standard template library), you’ll see alternatives to for loops that more clearly express your intent; they’re not faster, but they can make your code easier to understand.</li>
+</ul>
+<pre class="r"><code># a sum function
+cppFunction('double sumC(NumericVector x) {
+  int n = x.size();
+  double total = 0;
+  for(int i = 0; i &lt; n; ++i) {
+    total += x[i];
+  }
+  return total;
+}')
+
+# use function:
+sumC(c(1,2,3,4,5))</code></pre>
+<pre><code>## [1] 15</code></pre>
+<p>The C++ version is similar, <strong>but</strong>:</p>
+<ul>
+<li><p>To find the length of the vector, we use the .size() method, which returns an integer. C++ methods are called with . (i.e., a full stop).</p></li>
+<li><p>The for statement has a different syntax: <strong>for(init; check; increment)</strong>. This loop is initialised by creating a new variable called i with value 0. Before each iteration we check that i &lt; n, and terminate the loop if it’s not. After each iteration, <strong>we increment the value of i by one, using the special prefix operator ++ which increases the value of i by 1</strong>.</p></li>
+<li><p>In C++, vector indices start at 0. I’ll say this again because it’s so important: <strong>IN C++, VECTOR INDICES START AT 0!</strong> This is a very common source of bugs when converting R functions to C++.</p></li>
+<li><p>Use = for assignment, not &lt;-.</p></li>
+<li><p>C++ provides <strong>operators that modify in-place</strong>: total += x[i] is equivalent to total = total + x[i]. Similar in-place operators are <code>-=</code>, <code>*=</code>, and <code>/=</code>.</p></li>
+</ul>
+<p>This is a good example of where C++ is much more efficient than R. As shown by the following microbenchmark, sumC() is competitive with the built-in (and highly optimised) sum(), while sumR() is several orders of magnitude slower.</p>
+<pre class="r"><code># the `sum` function in R
+sumR &lt;- function(x) {
+  total &lt;- 0
+  for (i in seq_along(x)) {
+    total &lt;- total + x[i]
+  }
+  total
+}
+
+# check the time for this 3 `Sum` functions in different languages
+library(microbenchmark)
+x &lt;- runif(1e3)
+microbenchmark(
+  sum(x),
+  sumC(x),
+  sumR(x)
+)</code></pre>
+<pre><code>## Unit: microseconds
+##     expr    min      lq      mean  median     uq       max neval cld
+##   sum(x)  1.161  1.2200   1.31674  1.2590  1.310     3.460   100   a
+##  sumC(x)  2.654  2.8470 176.55069  2.9705  3.159 17350.302   100   a
+##  sumR(x) 44.139 45.3985  79.23831 45.6190 47.092  3298.062   100   a</code></pre>
+</div>
+<div id="test5-vector-input-vector-output" class="section level1">
+<h1>test5: Vector input, vector output</h1>
+<p>Next we’ll create a function that computes the Euclidean distance between a value and a vector of values:</p>
+<pre class="r"><code># write `pdistC` function using R
+cppFunction('NumericVector pdistC(double x, NumericVector ys) {
+  int n = ys.size();
+  NumericVector out(n);
+
+  for(int i = 0; i &lt; n; ++i) {
+    out[i] = sqrt(pow(ys[i] - x, 2.0));
+  }
+  return out;
+}')
+
+# use the function
+pdistC(7, c(1:10))</code></pre>
+<pre><code>##  [1] 6 5 4 3 2 1 0 1 2 3</code></pre>
+<p>This function introduces only a few new concepts:</p>
+<ul>
+<li><p>We create a new numeric vector of length n with a constructor: NumericVector out(n). Another useful way of making a vector is to copy an existing one: NumericVector zs = clone(ys).</p></li>
+<li><p>C++ uses pow(), not ^, for exponentiation.</p></li>
+</ul>
+</div>
+<div id="test6-matrix-input-vector-output" class="section level1">
+<h1>test6: Matrix input, vector output</h1>
+<p>Each vector type has a matrix equivalent: NumericMatrix, IntegerMatrix, CharacterMatrix, and LogicalMatrix. Using them is straightforward. For example, we could create a function that reproduces rowSums():</p>
+<pre class="r"><code>cppFunction('NumericVector rowSumsC(NumericMatrix x) {
+  int nrow = x.nrow(), ncol = x.ncol();
+  NumericVector out(nrow);
+  
+  for (int i = 0; i &lt; nrow; i++) {
+    double total = 0;
+    for (int j = 0; j &lt; ncol; j++) {
+      total += x(i, j);
+    }
+    out[i] = total;
+  }
+  return out;
+}')
+
+# use rowSumsC
+set.seed(1014)
+x &lt;- matrix(sample(100), 10)
+rowSumsC(x)</code></pre>
+<pre><code>##  [1] 458 558 488 458 536 537 488 491 508 528</code></pre>
+<p>The main differences:</p>
+<ul>
+<li><p>In C++, you subset a matrix with (), not [].</p></li>
+<li><p>Use .nrow() and .ncol() methods to get the dimensions of a matrix.</p></li>
+</ul>
+</div>
+<div id="use-sourcecpp" class="section level1">
+<h1>Use sourceCpp</h1>
 </div>
 
 
