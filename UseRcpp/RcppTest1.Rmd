@@ -196,7 +196,6 @@ rowSumsC(x)
 
 ```
 
-
 The main differences:
 
 + In C++, you subset a matrix with (), not [].
@@ -205,6 +204,50 @@ The main differences:
 
 
 # Use sourceCpp
+
+For real problems, it’s usually easier to use stand-alone C++ files and then source them into R using sourceCpp(). This lets you take advantage of text editor support for C++ files (e.g., syntax highlighting) as well as making it easier to identify the line numbers in compilation errors.
+
+The stand-alone C++ file should have extension .cpp, and this file needs to start with:
+```{rcpp}
+
+#include <Rcpp.h>
+using namespace Rcpp;
+
+```
+
+And for each function that you want available within R, you need to prefix the function with `// [[Rcpp::export]]`. 
+
++ Note that the space is mandatory. 
++ And `Rcpp::export` controls whether a function is exported from C++ to R. 
++ `@export` in `roxygen2` package controls whether a function is exported from a package and made available to the user.
+
+You can embed R code in special C++ comment blocks. This is really convenient if you want to run some test code, for example:
+```{Rcpp}
+
+#include <Rcpp.h>
+using namespace Rcpp;
+// [[Rcpp::export]]
+double meanC(NumericVector x) {
+  int n = x.size();
+  double total = 0;
+  
+  for(int i = 0; i < n; ++i) {
+    total += x[i];
+  }
+  return total / n;
+}
+
+/*** R
+# This is R code
+library(microbenchmark)
+  x <- runif(1e5)
+  microbenchmark(
+    mean(x),
+    meanC(x)
+  )
+  */
+
+```
 
 
 
