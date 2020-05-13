@@ -1,0 +1,142 @@
+---
+title: "TestTOAST"
+author: "Qianhui"
+date: "12/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# pack needed
+```{r}
+
+library(here)
+library(tidyverse)
+library(TOAST)
+
+```
+
+# sample data
+## DNA methylation
+```{r}
+
+data("RA_100samples")
+Y_raw <- RA_100samples$Y_raw
+Pheno <- RA_100samples$Pheno
+Blood_ref <- RA_100samples$Blood_ref
+
+```
+
+## gene expression
+
+```{r}
+
+data("CBS_PBMC_array")
+CBS_mix <- CBS_PBMC_array$mixed_all
+LM_5 <- CBS_PBMC_array$LM_5
+CBS_trueProp <- CBS_PBMC_array$trueProp
+prior_alpha <- CBS_PBMC_array$prior_alpha
+prior_sigma <- CBS_PBMC_array$prior_sigma
+
+```
+
+## Reference-based deconvolution using least square method
+```{r}
+refinx = findRefinx(Y_raw, nmarker=1000, sortBy = "var")
+
+Y <- Y_raw[refinx,]
+Ref <- as.matrix(Blood_ref[refinx,])
+
+library(EpiDISH)
+outT <- epidish(beta.m = Y, ref.m = Ref, method = "RPC")
+estProp_RB <- outT$estF
+
+
+```
+
+## Reference-free deconvolution using RefFreeEWAS
+```{r}
+library(RefFreeEWAS)
+refinx <- findRefinx(Y_raw, nmarker = 1000)
+Y <- Y_raw[refinx,]
+
+K <- 6
+outT <- RefFreeCellMix(Y, mu0=RefFreeCellMixInitialize(Y, K = K))
+estProp_RF <- outT$Omega
+
+estProp_RF <- assignCellType(input=estProp_RF,
+                             reference=estProp_RB) 
+mean(diag(cor(estProp_RF, estProp_RB)))
+
+```
+
+
+## Improved-RF with RefFreeCellMix
+```{r}
+K=6
+set.seed(1234)
+outRF1 <- csDeconv(Y_raw, K, TotalIter = 30, bound_negative = TRUE) 
+
+## check the accuracy of deconvolution
+estProp_RF_improved <- assignCellType(input=outRF1$estProp,
+                                      reference=estProp_RB) 
+mean(diag(cor(estProp_RF_improved, estProp_RB)))
+
+refinx <- findRefinx(Y_raw, nmarker = 1000, sortBy = "cv")
+InitNames <- rownames(Y_raw)[refinx]
+csDeconv(Y_raw, K = 6, nMarker = 1000, 
+         InitMarker = InitNames, TotalIter = 30)
+
+```
+
+## Improved-RF with use-defined RF function
+
+```{r}
+# Y (raw data) and K (number of cell types)
+
+mydeconv <- function(Y, K){
+     if (is(Y, "SummarizedExperiment")) {
+          se <- Y
+          Y <- assays(se)$counts
+     } else if (!is(Y, "matrix")) {
+          stop("Y should be a matrix
+               or a SummarizedExperiment object!")
+     }
+     
+     if (K<0 | K>ncol(Y)) {
+         stop("K should be between 0 and N (samples)!")
+     }
+     outY = RefFreeEWAS::RefFreeCellMix(Y, 
+               mu0=RefFreeEWAS::RefFreeCellMixInitialize(Y, 
+               K = K))
+     Prop0 = outY$Omega
+     return(Prop0)
+}
+
+set.seed(1234)
+outT <- csDeconv(Y_raw, K, FUN = mydeconv, bound_negative = TRUE)
+
+```
+
+
+#Detect cell type-specific differential signals under two-group comparison
+
+```{r}
+design <- data.frame(disease = as.factor(Pheno$disease))
+
+Prop <- estProp_RF_improved
+colnames(Prop) <- colnames(Ref) 
+
+Design_out <- makeDesign(design, Prop)
+
+fitted_model <- fitModel(Design_out, Y_raw)
+# print all the cell type names
+fitted_model$all_cell_types
+
+fitted_model$all_coefs
+```
+
+# Testing one parameter (e.g. disease) in one cell type.
+
