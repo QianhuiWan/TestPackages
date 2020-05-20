@@ -11,3 +11,4 @@ Some basic syntax of C++ were shown in `RcppTest1.Rmd` document.
 This R package is recently published and used for estimating cell composition for different tissues. 
 
 I will test and also compare `TOAST` package with `RefFreeEWAS` R package. These 2 packages are different in terms of the feature selection process, so I want to see whehter the results from these 2 packages will be different or not.
+
