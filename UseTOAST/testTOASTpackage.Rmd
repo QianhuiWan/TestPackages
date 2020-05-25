@@ -44,6 +44,7 @@ prior_sigma <- CBS_PBMC_array$prior_sigma
 
 ## Reference-based deconvolution using least square method
 ```{r}
+
 refinx = findRefinx(Y_raw, nmarker=1000, sortBy = "var")
 
 Y <- Y_raw[refinx,]
@@ -124,6 +125,7 @@ outT <- csDeconv(Y_raw, K, FUN = mydeconv, bound_negative = TRUE)
 #Detect cell type-specific differential signals under two-group comparison
 
 ```{r}
+
 design <- data.frame(disease = as.factor(Pheno$disease))
 
 Prop <- estProp_RF_improved
@@ -132,11 +134,46 @@ colnames(Prop) <- colnames(Ref)
 Design_out <- makeDesign(design, Prop)
 
 fitted_model <- fitModel(Design_out, Y_raw)
+
 # print all the cell type names
 fitted_model$all_cell_types
 
 fitted_model$all_coefs
+
+# Testing one parameter (e.g. disease) in one cell type.
+# For example, testing disease (patient versus controls) effect in Gran.
+
+res_table <- csTest(fitted_model, 
+                    coef = "disease", 
+                    cell_type = "Gran")
+
+head(res_table, 3)
+
+Disease_Gran_res <- res_table
+
+# Testing one parameter in all cell types.
+# For example, testing the joint effect of age in all cell types:
+
+res_table <- csTest(fitted_model, 
+                    coef = "disease", 
+                    cell_type = "joint")
+head(res_table, 3)
+
+# Specifying cell_type as NULL or not specifying cell_type will test the effect in each cell type and the joint effect in all cell types.
+
+res_table <- csTest(fitted_model, 
+                    coef = "disease", 
+                    cell_type = NULL)
+lapply(res_table, head, 3)
+
+## this is exactly the same as
+res_table <- csTest(fitted_model, coef = "disease")
+
 ```
 
 # Testing one parameter (e.g. disease) in one cell type.
+
+```{r}
+
+```
 
