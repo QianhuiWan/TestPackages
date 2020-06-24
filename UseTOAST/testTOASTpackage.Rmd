@@ -171,6 +171,7 @@ res_table <- csTest(fitted_model, coef = "disease")
 
 ```
 
+
 # Testing one parameter (e.g. disease) in one cell type.
 
 ```{r}
