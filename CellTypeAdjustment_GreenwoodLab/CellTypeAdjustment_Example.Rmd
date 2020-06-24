@@ -102,16 +102,17 @@ ISVA = DoISVA(sim_beta, matrix(disease_status))
 p.isva = ISVA$spv
 
 ###################################################
+# deconf R package is not avaiable for R version 4.0.1
 #Deconfounding: http://web.cbio.uct.ac.za/~renaud/CRAN/
-library(deconf)
-
-#Running deconfounding on subset to speed up demonstration
-sampdec = sample(length(sim_beta[,1]), 1000)
-tmpdec = deconfounding(sim_beta[sampdec,],3)
-
-X.tmpdec = model.matrix(~disease_status+t(tmpdec$C$Matrix))
-lm.tmpdec = eBayes(lmFit(sim_beta, X.tmpdec))
-p.dec = lm.tmpdec$p.value[,2]
+# library(deconf)
+# 
+# #Running deconfounding on subset to speed up demonstration
+# sampdec = sample(length(sim_beta[,1]), 1000)
+# tmpdec = deconfounding(sim_beta[sampdec,],3)
+# 
+# X.tmpdec = model.matrix(~disease_status+t(tmpdec$C$Matrix))
+# lm.tmpdec = eBayes(lmFit(sim_beta, X.tmpdec))
+# p.dec = lm.tmpdec$p.value[,2]
 
 ##################################################
 #RUV: https://cran.r-project.org/web/packages/ruv/index.html
@@ -173,8 +174,9 @@ qq(p.ref)
 qq(p.reffree)
 qq(p.sva)
 qq(p.isva)
-qq(p.dec)
+# qq(p.dec)
 qq(p.ruv)
 
 #CellCDecon and EWASher could be plotted as well if the p-values were loaded back into the workspace after running the methods externally.
+
 ```
