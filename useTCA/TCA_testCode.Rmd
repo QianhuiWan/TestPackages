@@ -1,0 +1,144 @@
+---
+title: "Test TCA package, R"
+author: "QW"
+date: "21/05/2021"
+output: html_document
+---
+
+# load package needed
+
+*install.packages(c("TCA","ggplot2","ggpubr","pracma","matrixStats"))*
+```{r, results = "hide"}
+
+pkgs <- c("TCA","ggplot2","ggpubr","pracma","matrixStats")
+
+lapply(pkgs, library, character.only = TRUE)
+
+rm(pkgs)
+
+```
+
+
+# load data and functions needed
+
+## download data needed, test data only have probes for chr22
+```{r}
+
+# where files will be stored
+data_path <- "./useTCA/testData/" 
+
+# Download data files
+download.file(
+  "github.com/cozygene/TCA/blob/master/vignettes/hannum.chr22.RData?raw=true",
+  paste(data_path,"hannum.chr22.RData",sep=""))
+
+download.file(
+  "github.com/cozygene/TCA/blob/master/vignettes/liu.cd4.chr22.RData?raw=true",
+              paste(data_path,"liu.cd4.chr22.RData",sep=""))
+
+```
+
+## load data 
+```{r}
+
+load("testData/hannum.chr22.RData")
+load("testData/liu.cd4.chr22.RData")
+
+```
+
+
+## load functions we need for this pipeline
+```{r}
+
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "cozygene/TCA/master/vignettes/"
+fileName   <- "vignette_analysis.R"
+
+paste0(urlRemote, pathGithub, fileName) %>% source()
+
+```
+
+
+# Apply TCA to whole blood
+```{r}
+
+tca.mdl.hannum <- tca(X = hannum$X,
+                      W = hannum$W,
+                      C1 = hannum$cov[,c("gender","age")],
+                      C2 = hannum$cov[,3:ncol(hannum$cov)])
+
+# Extract CpG-level p-values for the association with age, under a joint test
+tca.mdl.hannum.pvals.joint <- tca.mdl.hannum$gammas_hat_pvals.joint[,"age"]
+# Extract p-values for each cell type for its association with age, 
+# under a marginal conditional test
+tca.mdl.hannum.pvals.marg_cond <- 
+  tca.mdl.hannum$gammas_hat_pvals[,paste(colnames(hannum$W),".age",sep="")]  
+# qq-plots - for the p-values of the joint test, and for the marginal
+# conditional p-values for CD4 cells
+plot_qq(list(tca.mdl.hannum.pvals.joint, 
+             tca.mdl.hannum.pvals.marg_cond[,"CD4T.age"]),
+        labels = c("Joint test with age", 
+                   "CD4 marginal conditional test with age"),
+        ggarrange.nrow = 1,
+        ggarrange.ncol = 2,
+        experiment_wide_line = FALSE)
+
+```
+
+
+
+# Addressing the inflation using ReFACTor
+```{r}
+
+refactor.mdl.hannum <- refactor(X = hannum$X,
+                                k = 6,
+                                C = hannum$cov[,3:ncol(hannum$cov)])
+
+tca.mdl.hannum.2 <- 
+  tca(X = hannum$X,
+      W = hannum$W,
+      C1 = hannum$cov[,c("gender","age")],
+      C2 = cbind(hannum$cov[,3:ncol(hannum$cov)],
+                 refactor.mdl.hannum$scores))
+# Extract the updated p-values of a joint test
+tca.mdl.hannum.2.pvals.joint <- tca.mdl.hannum.2$gammas_hat_pvals.joint[,"age"]
+# Extract the updated marginal conditional p-values
+tca.mdl.hannum.2.pvals.marg_cond <-
+  tca.mdl.hannum.2$gammas_hat_pvals[,paste(colnames(hannum$W),".age",sep="")]
+# qq-plots - for the new p-values of the joint test, and for the new p-values 
+# in CD4, under a marginal conditional test
+plot_qq(list(tca.mdl.hannum.2.pvals.joint, 
+             tca.mdl.hannum.2.pvals.marg_cond[,"CD4T.age"]),
+        labels = c("Joint test with age", 
+                   "CD4 marginal conditional test with age"),
+        ggarrange.nrow = 1,
+        ggarrange.ncol = 2,
+        experiment_wide_line = FALSE)
+
+```
+
+# Re-estimate cell-type proportions
+```{r}
+
+tca.mdl.paquette.refit_W <- 
+  tca(X = paquette$X.ref_cpgs,
+      W = paquette$W,
+      C1 = paquette$cov[,c("gender","gestational_age")],
+      C2 = paquette$cov[,4:ncol(paquette$cov)],
+      constrain_mu = TRUE,
+      refit_W = TRUE,
+      refit_W.features = rownames(paquette$X.ref_cpgs))
+
+# In the second execution of TCA use the re-estimated W from the first execution
+tca.mdl.paquette.2 <- tca(X = paquette$X,
+                          W = tca.mdl.paquette.refit_W$W,
+                          C1 = paquette$cov[,c("gender","gestational_age")],
+                          C2 = paquette$cov[,4:ncol(paquette$cov)],
+                          constrain_mu = TRUE)
+
+```
+
+
+
+
+
