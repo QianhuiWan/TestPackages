@@ -20,11 +20,12 @@ These 2 packages are different in terms of the feature selection process,
 so I want to see whether the results from these 2 packages will be different 
 or not.
 
-## Test the cell type adjustment example, from the 2016 article 
+## Test different cell type adjustment methods listed in the 2016 article 
 (An evaluation of methods correcting for cell-type heterogeneity in DNA 
 methylation studies)
 
-This example is from github (https://github.com/GreenwoodLab/CellTypeAdjustment).
+This codes are from github 
+https://github.com/GreenwoodLab/CellTypeAdjustment/blob/master/ct_adjustment_example.R.
 
 ## `TCA` R package
 
