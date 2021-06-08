@@ -34,3 +34,12 @@ performing cell type specific differential methylation analysis.
 
 TCA vignette: 
 https://cran.r-project.org/web/packages/TCA/vignettes/tca-vignette.html
+
+## `coMethDMR` R package
+
+This package is used for identify co-methylated regions and deferentially 
+methylated regions, especially suitable for analysing continuous variables.
+https://github.com/TransBioInfoLab/coMethDMR
+
+Parallel processing is allowed for most of the functions in this package.
+
